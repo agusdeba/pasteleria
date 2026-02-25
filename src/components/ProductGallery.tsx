@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Product, Category, getProducts } from '@/lib/store';
+import { Product, Category } from '@/lib/store';
+import { fetchProducts } from '@/lib/products';
 import { cn } from '@/lib/utils';
 
 export default function ProductGallery() {
@@ -9,7 +10,11 @@ export default function ProductGallery() {
   const [filter, setFilter] = useState<Category | 'Todos'>('Todos');
 
   useEffect(() => {
-    setProducts(getProducts());
+    const loadProducts = async () => {
+      const data = await fetchProducts();
+      setProducts(data);
+    };
+    loadProducts();
   }, []);
 
   const filteredProducts = filter === 'Todos' 
