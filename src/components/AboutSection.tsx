@@ -11,8 +11,8 @@ export default function AboutSection() {
               respeten tu estilo de vida.
             </p>
             <p className="text-lg leading-relaxed text-rome-gray font-serif italic border-l-4 border-rome-lightGreen pl-4">
-              "Lo más importante es que nuestra comida es naturalmente baja en calorías y carbohidratos, utilizando
-              ingredientes de la más alta calidad."
+              &quot;Lo más importante es que nuestra comida es naturalmente baja en calorías y carbohidratos, utilizando
+              ingredientes de la más alta calidad.&quot;
             </p>
           </div>
           <div className="bg-rome-cream p-8 rounded-2xl shadow-inner border border-rome-mutedGreen/20">

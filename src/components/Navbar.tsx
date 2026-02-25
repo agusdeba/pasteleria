@@ -23,9 +23,6 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             Contacto
           </button>
         </div>
-        <Link href="/admin" className="text-xs text-rome-gray hover:underline">
-          Admin
-        </Link>
       </div>
     </nav>
   );

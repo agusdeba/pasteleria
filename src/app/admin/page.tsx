@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Product, Category, getProducts, saveProduct, deleteProduct } from '@/lib/store';
-import { Plus, Edit2, Trash2, X, Upload } from 'lucide-react';
-import { cn, fileToBase64 } from '@/lib/utils';
+import { Product, Category } from '@/lib/store';
+import { fetchProducts, createProduct, updateProduct, removeProduct, uploadProductImage } from '@/lib/products';
+import { Plus, Edit2, Trash2, X, Upload, LogOut } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({
@@ -16,22 +21,29 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    setProducts(getProducts());
+    loadProducts();
   }, []);
 
-  const handleSave = () => {
+  const loadProducts = async () => {
+    const data = await fetchProducts();
+    setProducts(data);
+  };
+
+  const handleSave = async () => {
     if (currentProduct.name && currentProduct.description && currentProduct.image && currentProduct.category) {
-      const productToSave: Product = {
-        id: currentProduct.id || Math.random().toString(36).substr(2, 9),
-        name: currentProduct.name,
-        description: currentProduct.description,
-        image: currentProduct.image,
-        category: currentProduct.category as Category,
-      };
-      saveProduct(productToSave);
-      setProducts(getProducts());
-      setIsEditing(false);
-      setCurrentProduct({ name: '', description: '', image: '', category: 'Dulce' });
+      try {
+        if (currentProduct.id) {
+          await updateProduct(currentProduct as Product);
+        } else {
+          await createProduct(currentProduct as Omit<Product, 'id'>);
+        }
+        await loadProducts();
+        setIsEditing(false);
+        setCurrentProduct({ name: '', description: '', image: '', category: 'Dulce' });
+      } catch (error) {
+        console.error(error);
+        alert('Error al guardar el producto. Asegúrese de haber iniciado sesión.');
+      }
     } else {
       alert('Por favor complete todos los campos');
     }
@@ -42,36 +54,60 @@ export default function AdminPage() {
     setIsEditing(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('¿Está seguro de eliminar este producto?')) {
-      deleteProduct(id);
-      setProducts(getProducts());
+      try {
+        await removeProduct(id);
+        await loadProducts();
+      } catch (error) {
+        console.error(error);
+        alert('Error al eliminar');
+      }
     }
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const base64 = await fileToBase64(file);
-      setCurrentProduct({ ...currentProduct, image: base64 });
+      try {
+        const publicUrl = await uploadProductImage(file);
+        setCurrentProduct({ ...currentProduct, image: publicUrl });
+      } catch (error) {
+        console.error(error);
+        alert('Error al subir la imagen');
+      }
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/admin/login');
+  };
+
   return (
-    <div className="min-h-screen bg-rome-cream p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-rome-darkGreen">Administrador de Productos</h1>
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              setCurrentProduct({ name: '', description: '', image: '', category: 'Dulce' });
-            }}
-            className="bg-rome-darkGreen text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-rome-mediumGreen transition-colors"
-          >
-            <Plus size={20} /> Agregar Producto
-          </button>
-        </div>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-rome-cream p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-rome-darkGreen">Administrador de Productos</h1>
+            <div className="flex gap-4">
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-red-600 transition-colors"
+              >
+                <LogOut size={20} /> Salir
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(true);
+                  setCurrentProduct({ name: '', description: '', image: '', category: 'Dulce' });
+                }}
+                className="bg-rome-darkGreen text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-rome-mediumGreen transition-colors"
+              >
+                <Plus size={20} /> Agregar Producto
+              </button>
+            </div>
+          </div>
 
         {/* Modal-like Overlay for Form */}
         {isEditing && (
@@ -187,5 +223,6 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
