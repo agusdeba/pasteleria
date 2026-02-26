@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-
+import Image from 'next/image';
 export default function AdminPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -112,7 +112,7 @@ export default function AdminPage() {
         {/* Modal-like Overlay for Form */}
         {isEditing && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-rome-darkGreen">
                   {currentProduct.id ? 'Editar Producto' : 'Nuevo Producto'}
@@ -160,11 +160,14 @@ export default function AdminPage() {
                   <label className="block text-sm font-medium text-rome-gray mb-1">Imagen</label>
                   <div className="flex flex-col items-center gap-2">
                     {currentProduct.image && (
-                      <img
-                        src={currentProduct.image}
-                        alt="Preview"
-                        className="w-32 h-32 object-cover rounded-md border"
-                      />
+                      <div className="relative w-32 h-32 rounded-md border overflow-hidden">
+                        <Image
+                          src={currentProduct.image}
+                          alt="Preview"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
                     )}
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -191,7 +194,14 @@ export default function AdminPage() {
         <div className="grid gap-4">
           {products.map((product) => (
             <div key={product.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center gap-4">
-              <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded-md" />
+              <div className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden">
+                <Image 
+                  src={product.image} 
+                  alt={product.name} 
+                  fill 
+                  className="object-cover" 
+                />
+              </div>
               <div className="flex-1">
                 <h3 className="font-bold text-rome-darkGreen">{product.name}</h3>
                 <p className="text-sm text-rome-gray line-clamp-1">{product.description}</p>

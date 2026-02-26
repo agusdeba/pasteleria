@@ -1,50 +1,52 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  // 1. Creamos una respuesta base que el middleware podrá modificar
+  // 1. Creamos la respuesta base
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  // 2. Inicializamos el cliente de Supabase configurado para leer y escribir cookies
+  // 2. Inicializamos Supabase con la nueva sintaxis getAll y setAll
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: {
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      },
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
+        setAll(cookiesToSet) {
+          // Actualizamos las cookies en la request (para que Supabase las lea ahora)
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          
+          // Refrescamos la respuesta de Next.js
           response = NextResponse.next({
-            request: { headers: request.headers },
+            request,
           });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options });
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          });
-          response.cookies.set({ name, value: '', ...options });
+          
+          // Aplicamos las cookies en la respuesta (para que se guarden en el navegador)
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
     }
   );
 
-  // 3. Verificamos de forma segura si el usuario está autenticado
+  // 3. Verificamos la sesión
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 4. Lógica de protección: 
-  // Si NO hay usuario y la ruta visitada empieza con "/admin"...
+  // 4. Protegemos la ruta
   if (!user && request.nextUrl.pathname.startsWith('/admin')) {
-    // Clonamos la URL actual y lo redirigimos a la página de login
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/login'; // Ajustá esto al nombre exacto de tu ruta de login
+    redirectUrl.pathname = '/login'; 
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -53,9 +55,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Protege todas las rutas que empiecen con /admin.
-     */
     '/admin/:path*',
   ],
 };

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Product, Category } from '@/lib/store';
 import { fetchProducts } from '@/lib/products';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 export default function ProductGallery() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -54,9 +55,10 @@ export default function ProductGallery() {
               className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
             >
               <div className="relative h-72 w-full overflow-hidden">
-                <img
+                <Image
                   src={product.image}
                   alt={product.name}
+                  fill
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
