@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Instagram, MapPin, Clock, Mail, Phone, Send } from 'lucide-react';
+import { Instagram, MapPin, Clock, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Swal from 'sweetalert2';
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,9 @@ export default function ContactSection() {
     email: '',
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -25,7 +29,7 @@ export default function ContactSection() {
     return /^\d+$/.test(phone);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     let valid = true;
     const newErrors = { phone: '', email: '' };
@@ -43,8 +47,52 @@ export default function ContactSection() {
     setErrors(newErrors);
 
     if (valid) {
-      alert('¡Gracias! Tu consulta ha sido enviada (Simulación).');
-      setFormData({ name: '', phone: '', email: '', inquiry: '' });
+      setIsSubmitting(true);
+      
+      try {
+        const response = await fetch('/api/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const data = await response.json();
+        console.log("Respuesta de la API:", data);
+
+        if (response.ok && data.success) {
+          // Vaciamos el formulario
+          setFormData({ name: '', phone: '', email: '', inquiry: '' });
+          
+          Swal.fire({
+            title: '¡Mensaje enviado!',
+            text: 'Tu consulta ha sido enviada correctamente.',
+            icon: 'success',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+              popup: 'rounded-2xl', 
+            }
+          });
+        } else {
+          throw new Error(data.error?.message || 'Error desconocido al enviar');
+        }
+      } catch (error) {
+        console.error("Error al enviar el formulario", error);
+        Swal.fire({
+          title: 'Error',
+          text: 'Hubo un problema al enviar el mensaje. Por favor, intenta de nuevo.',
+          icon: 'error',
+          confirmButtonColor: '#1a3626', // Verde oscuro de tu paleta
+          customClass: {
+            popup: 'rounded-2xl',
+          }
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -109,6 +157,14 @@ export default function ContactSection() {
           {/* Form */}
           <div className="bg-rome-cream p-8 md:p-10 rounded-3xl shadow-sm">
             <h3 className="text-2xl font-bold text-rome-darkGreen mb-8">Envíanos un mensaje</h3>
+            
+            {/* Mensaje de éxito condicional */}
+            {submitSuccess && (
+              <div className="mb-6 bg-rome-mediumGreen/10 text-rome-darkGreen p-4 rounded-xl border border-rome-mediumGreen/20 flex items-center gap-3">
+                <span className="font-bold">¡Gracias!</span> Tu consulta ha sido enviada correctamente. Nos pondremos en contacto pronto.
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-rome-gray mb-1">Nombre y Apellido *</label>
@@ -169,10 +225,11 @@ export default function ContactSection() {
 
               <button
                 type="submit"
-                className="w-full bg-rome-darkGreen text-white py-4 rounded-xl font-bold hover:bg-rome-mediumGreen transition-all flex items-center justify-center gap-2 group"
+                disabled={isSubmitting}
+                className="w-full bg-rome-darkGreen text-white py-4 rounded-xl font-bold hover:bg-rome-mediumGreen transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Enviar Consulta
-                <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                {isSubmitting ? 'Enviando...' : 'Enviar Consulta'}
+                {!isSubmitting && <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
               </button>
             </form>
           </div>
