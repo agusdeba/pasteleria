@@ -4,4 +4,5 @@ export { default as AdminHeader } from './AdminHeader';
 export { default as AdminProductModal } from './AdminProductModal';
 export { default as AdminCategoryFilter } from './AdminCategoryFilter';
 export { default as AdminEmptyState } from './AdminEmptyState';
+export { default as AdminToolbar } from './AdminToolbar';
 export { default as LoginForm } from './LoginForm';

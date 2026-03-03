@@ -2,6 +2,7 @@
 
 const CATEGORIES = ['Todas', 'Dulce', 'Salado', 'Postre'] as const;
 
+
 interface AdminCategoryFilterProps {
   activeCategory: string;
   onSelect: (category: string) => void;
